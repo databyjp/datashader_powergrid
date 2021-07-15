@@ -38,24 +38,8 @@ if __name__ == "__main__":
 
     df = df.persist()
 
-    county_fpath = "data/grid/subcounty_data_proc.parq"
-    county_df = read_parquet_dask(county_fpath)
-    county_df["LAT"] = county_df["LAT"].astype(np.float32)
-    county_df["LON"] = county_df["LON"].astype(np.float32)
-    county_df["renewable_cap"] = county_df["renewable_cap"].fillna(0).astype(np.float32)
-
-    # state_fpath = "data/grid/state_data_proc.parq"
-    # state_df = read_parquet_dask(state_fpath)
-    # state_df["LAT"] = state_df["LAT"].astype(np.float32)
-    # state_df["LON"] = state_df["LON"].astype(np.float32)
-    # state_df["renewable_cap"] = state_df["renewable_cap"].fillna(0).astype(np.float32)
-    # state_df["emission_rate"] = state_df["emission_rate"].fillna(0).astype(np.float32)
-    # state_df["cap"] = state_df["cap"].fillna(0).astype(np.float32)
-
     # Clear any published datasets
     for k in client.list_datasets():
         client.unpublish_dataset(k)
 
     client.publish_dataset(df=df)
-    client.publish_dataset(county_df=county_df)
-    # client.publish_dataset(state_df=state_df)
