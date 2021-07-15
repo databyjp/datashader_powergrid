@@ -229,7 +229,7 @@ client = None
 #             worker_cpu=2,
 #             worker_memory="8 GiB",
 #             shutdown_on_close=False,
-#             scheduler_options={"idle_timeout": "24 hours"}
+#             scheduler_options={"idle_timeout": "1 hour"}
 #         )
 #         try:
 #             client = Client(cluster)
