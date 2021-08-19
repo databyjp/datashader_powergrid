@@ -21,3 +21,4 @@ As `coiled_login.py` reads the Coiled.io token as an environmental variable, it 
 - https://atlas.eia.gov/datasets/geoplatform::electric-power-transmission-lines/about
 - https://atlas.eia.gov/datasets/eia::solar-2/about
 - https://atlas.eia.gov/datasets/eia::wind-2/about
+- https://www.nrel.gov/gis/solar-resource-maps.html

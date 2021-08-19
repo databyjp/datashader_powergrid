@@ -16,7 +16,7 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import colorcet
-from colorcet import bgy, fire, blues, CET_L18, kg
+from colorcet import bgy, fire, blues, CET_L18, dimgray, kgy
 import datashader.transfer_functions as tf
 import json
 import datetime
@@ -110,7 +110,7 @@ def get_cnr_coords(agg, coord_params):
     return curr_coords_ll_out
 
 
-def get_mapbox_layer(df_in, agg_type="points", agg_param=None, x_col="x", y_col="y", geom=None, cmap=fire, res="fine"):
+def get_mapbox_layer(df_in, agg_type="points", agg_param=None, x_col="x", y_col="y", geom=None, cmap=fire, res="fine", opacity=1.0):
     if agg_param is None:
         agg_param = ds.any()
 
@@ -151,7 +151,7 @@ def get_mapbox_layer(df_in, agg_type="points", agg_param=None, x_col="x", y_col=
 
     curr_coords_ll_out = get_cnr_coords(agg, [x_col, y_col])
 
-    return {"sourcetype": "image", "source": img_out, "coordinates": curr_coords_ll_out}, float(agg.min().values), float(agg.max().values)
+    return {"sourcetype": "image", "opacity": opacity, "source": img_out, "coordinates": curr_coords_ll_out}, float(agg.min().values), float(agg.max().values)
 
 
 def build_legend(scale_min=0.0, scale_max=1.0, colorscale_n=7, cmap=bgy, legend_title="Legend"):
@@ -311,6 +311,9 @@ solar_df = pd.read_csv("data/Power_Plants_Solar_proc.csv")
 # Load Wind Powerplant data
 logger.info("Loading wind power plant data")
 wind_df = pd.read_csv("data/Power_Plants_Wind_proc.csv")
+
+# Load solar potential data
+sp_df = pd.read_csv("data/nsrdb3_ghi_en_us_states_only.csv", index_col=0)
 
 max_pcap = max(solar_df["Total_MW"].max(), wind_df["Total_MW"].max())
 # ====================
@@ -499,6 +502,21 @@ body = html.Div([dbc.Container(
                         )
                     ]),
                     dbc.Card([
+                        dbc.CardHeader("Renewable energy potential overlay"),
+                        dbc.CardBody(
+                            [
+                                dcc.Dropdown(
+                                    options=[
+                                        {'label': 'Solar', 'value': 'solar'},
+                                        {'label': 'None', 'value': 'empty'},
+                                    ],
+                                    value='empty',
+                                    id="potential-overlay"
+                                )
+                            ]
+                        )
+                    ], className="mt-2"),
+                    dbc.Card([
                         dbc.CardHeader("Grid voltages"),
                         dbc.CardBody(
                             [
@@ -514,7 +532,7 @@ body = html.Div([dbc.Container(
                                         math.log(500): '500V',
                                         math.log(1000): '1kV',
                                     },
-                                    value=[math.log(100), math.log(1000)]
+                                    value=[math.log(161), math.log(1000)]
                                 ),
                             ]
                         )
@@ -547,14 +565,14 @@ body = html.Div([dbc.Container(
                                 html.Label("Solar power plants"),
                                 dcc.Dropdown(
                                     options=[{"label": "Total Power", "value": "total"}, {"label": "Average Power", "value": "avg"}, {"label": "Count", "value": "count"}],
-                                    value="count",
+                                    value="total",
                                     multi=False,
                                     id="solar-agg"
                                 ),
                                 html.Label("Wind power plants"),
                                 dcc.Dropdown(
                                     options=[{"label": "Total Power", "value": "total"}, {"label": "Average Power", "value": "avg"}, {"label": "Count", "value": "count"}],
-                                    value="count",
+                                    value="total",
                                     multi=False,
                                     id="wind-agg"
                                 )
@@ -635,6 +653,7 @@ app.layout = html.Div([header, body])
     [
         Input("map-graph", "relayoutData"),
         Input("layer-checklist", "value"),
+        Input("potential-overlay", "value"),
         Input("grid-voltages", "value"),
         Input("pp-caps", "value"),
         Input("pp-sectors", "value"),
@@ -646,7 +665,7 @@ app.layout = html.Div([header, body])
         State("prev-zoom", "children"),
     ],
 )
-def update_overlay(relayout_data, layers_list, grid_voltages, pp_caps, pp_sectors, solar_res, wind_res, solar_agg, wind_agg, prev_center_json, prev_zoom):
+def update_overlay(relayout_data, layers_list, potential_layer, grid_voltages, pp_caps, pp_sectors, solar_res, wind_res, solar_agg, wind_agg, prev_center_json, prev_zoom):
 
     grid_voltages = [int(math.exp(i)) for i in grid_voltages]
     grid_voltages = [grid_voltages[0]-1, grid_voltages[1]+1]  # Account for rounding errors
@@ -681,8 +700,17 @@ def update_overlay(relayout_data, layers_list, grid_voltages, pp_caps, pp_sector
     # Update mapbox layers & legends
     mapbox_layers = list()
     legends_div = list()
+
+    if potential_layer == "solar":
+        tmp_sp_df = filter_df(sp_df, relayout_zoom, relayout_lon, relayout_lat)
+        sp_layer, agg_min, agg_max = get_mapbox_layer(tmp_sp_df, agg_type="points", agg_param=ds.mean("z"),
+                                                      x_col="x_en", y_col="y_en", cmap=dimgray, res="coarse", opacity=0.4)
+        mapbox_layers.append(sp_layer)
+        sp_legend = build_legend(scale_min=agg_min, scale_max=agg_max, legend_title="Solar potential (kWh/sqm/day)", cmap=dimgray)
+        legends_div.append(sp_legend)
+
     if "grid" in layers_list:
-        grid_cmap = kg
+        grid_cmap = kgy
         grid_layer, agg_min, agg_max = get_mapbox_layer(tmp_df, agg_type="line", agg_param=ds.mean("VOLTAGE"), geom="geometry", cmap=grid_cmap)
         mapbox_layers.append(grid_layer)
         grid_legend = build_legend(scale_min=agg_min, scale_max=agg_max, legend_title="Average grid voltage", cmap=grid_cmap)
@@ -691,31 +719,35 @@ def update_overlay(relayout_data, layers_list, grid_voltages, pp_caps, pp_sector
         solar_cmap = CET_L18
         if solar_agg == "total":
             solar_agg_func = ds.sum("Total_MW")
+            solar_legend_txt = "Solar power plants - total capacity (MW)"
         elif solar_agg == "avg":
             solar_agg_func = ds.mean("Total_MW")
-        elif solar_agg == "count":
-            solar_agg_func = ds.count()
+            solar_legend_txt = "Solar power plants - avg capacity (MW)"
         else:
-            logger.info("Unrecognised variable, defaulting to count")
+            if solar_agg != "count":
+                logger.info("Unrecognised variable, defaulting to count")
             solar_agg_func = ds.count()
+            solar_legend_txt = "Solar power plants"
         solar_layer, agg_min, agg_max = get_mapbox_layer(tmp_solar_df, agg_type="points", agg_param=solar_agg_func, x_col="x_en", y_col="y_en", cmap=solar_cmap, res=solar_res)
         mapbox_layers.append(solar_layer)
-        solar_legend = build_legend(scale_min=agg_min, scale_max=agg_max, legend_title="Solar power plants", cmap=solar_cmap)
+        solar_legend = build_legend(scale_min=agg_min, scale_max=agg_max, legend_title=solar_legend_txt, cmap=solar_cmap)
         legends_div.append(solar_legend)
     if "wind" in layers_list:
         wind_cmap = blues
         if wind_agg == "total":
             wind_agg_func = ds.sum("Total_MW")
+            wind_legend_txt = "Wind power plants - total capacity (MW)"
         elif wind_agg == "avg":
             wind_agg_func = ds.mean("Total_MW")
-        elif wind_agg == "count":
-            wind_agg_func = ds.count()
+            wind_legend_txt = "Wind power plants - avg capacity (MW)"
         else:
-            logger.info("Unrecognised variable, defaulting to count")
+            if wind_agg != "count":
+                logger.info("Unrecognised variable, defaulting to count")
             wind_agg_func = ds.count()
+            wind_legend_txt = "Wind power plants"
         wind_layer, agg_min, agg_max = get_mapbox_layer(tmp_wind_df, agg_type="points", agg_param=wind_agg_func, x_col="x_en", y_col="y_en", cmap=wind_cmap, res=wind_res)
         mapbox_layers.append(wind_layer)
-        wind_legend = build_legend(scale_min=agg_min, scale_max=agg_max, legend_title="Wind power plants", cmap=wind_cmap)
+        wind_legend = build_legend(scale_min=agg_min, scale_max=agg_max, legend_title=wind_legend_txt, cmap=wind_cmap)
         legends_div.append(wind_legend)
 
     # Build histogram
@@ -770,11 +802,7 @@ def update_overlay(relayout_data, layers_list, grid_voltages, pp_caps, pp_sector
     update_status = "info"
 
     # Calc values to display on datacards
-    start_time = datetime.datetime.now()
     tot_grid_len = int(df["SHAPE_Leng"].sum().compute() * 85)  # Magic number 85 comes from a rule of thumb lat/lon to km conversion from at this latitude (See https://gis.stackexchange.com/questions/251643/approx-distance-between-any-2-longitudes-at-a-given-latitude)
-    update_time = datetime.datetime.now() - start_time
-    update_time = str(round(update_time.total_seconds(), 2))
-    logger.info(f"Took {update_time}s for length calc")
     tot_wind_cap = int(tmp_wind_df[tmp_wind_df["Wind_MW"] > 0]["Wind_MW"].sum())
     tot_solar_cap = int(tmp_solar_df[tmp_solar_df["Solar_MW"] > 0]["Solar_MW"].sum())
 
