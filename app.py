@@ -942,7 +942,7 @@ def update_overlay(relayout_data, selected_data, mapbox_style_in, layers_list, p
     else:
         if pot_cmap != "dimgray":
             logger.warning("Did not recognise colormap selection")
-        pot_cmap = CET_L9
+        pot_cmap = dimgray
 
     if potential_layer == "none":
         select_est_para = "Try selecting a resource type under 'Renewables Potential'."
