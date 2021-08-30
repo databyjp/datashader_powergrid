@@ -17,8 +17,14 @@ As `coiled_login.py` reads the Coiled.io token as an environmental variable, it 
 - Datashader (https://datashader.org/)
 
 ### Data Sources:
-
 - https://atlas.eia.gov/datasets/geoplatform::electric-power-transmission-lines/about
 - https://atlas.eia.gov/datasets/eia::solar-2/about
 - https://atlas.eia.gov/datasets/eia::wind-2/about
 - https://www.nrel.gov/gis/solar-resource-maps.html
+- https://www.nrel.gov/gis/wind-resource-maps.html
+- https://ourworldindata.org/energy-production-consumption
+- https://www.eia.gov/energyexplained/use-of-energy/electricity-use-in-homes.php
+- https://www.nrel.gov/pv/cell-efficiency.html
+- https://www.nrel.gov/docs/fy09osti/45834.pdf
+
+Built with Plotly Dash

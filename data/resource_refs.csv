@@ -1,0 +1,10 @@
+﻿Resource,Link
+Electric grid dataset,https://atlas.eia.gov/datasets/geoplatform::electric-power-transmission-lines/about
+Solar power plants,https://atlas.eia.gov/datasets/eia::solar-2/about
+Wind power plants,https://atlas.eia.gov/datasets/eia::wind-2/about
+Solar resource map,https://www.nrel.gov/gis/solar-resource-maps.html
+Wind resource map,https://www.nrel.gov/gis/wind-resource-maps.html
+U.S. electricity consumption,https://www.eia.gov/energyexplained/use-of-energy/electricity-use-in-homes.php
+Renewables capacity factors,https://www.eia.gov/todayinenergy/detail.php?id=14611
+Wind turbine efficiency,https://www.nrel.gov/docs/fy09osti/45834.pdf
+Solar PV efficiency,https://www.nrel.gov/pv/cell-efficiency.html

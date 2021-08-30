@@ -2,9 +2,9 @@
 # Add this directory to PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:`dirname "$(realpath $0)"`
 
-# # TO Accommodate peculiarities of gallery server only - most people can ignore the next two lines
-# pip install --upgrade pip
-# pip install -r requirements-predeploy.txt
+# TO Accommodate peculiarities of gallery server only - most people can ignore the next two lines
+pip install --upgrade pip
+pip install -r requirements-predeploy.txt
 
 # # -- WHEN USING COILED - UNHIDE THE NEXT TWO LINES --
 # python coiled_login.py  # Log into coiled using token saved as env variable

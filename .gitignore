@@ -1,6 +1,7 @@
 # Project specific
 temp/
 data/grid
+data/resource
 
 # Snapshot
 snapshot-dev.db

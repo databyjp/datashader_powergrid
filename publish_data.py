@@ -7,6 +7,7 @@ import numpy as np
 from distributed import Client
 from spatialpandas.io import read_parquet_dask
 from utils import scheduler_url
+import dask.dataframe as dd
 
 
 if __name__ == "__main__":
@@ -35,11 +36,19 @@ if __name__ == "__main__":
 
     # Filter out rows with unknown voltage
     df = df[df["VOLTAGE"] > 0]
-
     df = df.persist()
+
+    # Load renewable potentials data
+    sp_df = dd.read_csv("data/resource/nsrdb3_ghi_en_us_proc.csv")  # Load solar potential data
+    sp_df = sp_df.persist()
+
+    wp_df = dd.read_csv("data/resource/wtk_conus_80m_mean_masked_proc.csv")  # Load wind potential data
+    wp_df = wp_df.persist()
 
     # Clear any published datasets
     for k in client.list_datasets():
         client.unpublish_dataset(k)
 
     client.publish_dataset(df=df)
+    client.publish_dataset(wp_df=wp_df)
+    client.publish_dataset(sp_df=sp_df)

@@ -48,22 +48,20 @@ state_df = pd.read_parquet("temp/state_data_proc.parq")  # need to import spatia
 
 # Add state column to solar_df_us
 solar_df_us = solar_df_us.assign(state=None)
-sample_size = min(1000000, len(solar_df_us))
-solar_df_us_sm = solar_df_us.sample(n=sample_size, random_state=42)  # Sampling for speed
 
 starttime = datetime.datetime.now()
 counter = 0
-looplen = len(solar_df_us_sm)
+looplen = len(solar_df_us)
 
 for j in range(looplen):
-    tmp_x = solar_df_us_sm.iloc[j]["x"]
-    tmp_y = solar_df_us_sm.iloc[j]["y"]
+    tmp_x = solar_df_us.iloc[j]["x"]
+    tmp_y = solar_df_us.iloc[j]["y"]
     tmp_pt = shapely.geometry.Point((tmp_x, tmp_y))
     tmp_states = state_df[(state_df["lonmin"] < tmp_x) & (state_df["lonmax"] > tmp_x) & (state_df["latmin"] < tmp_y) & (state_df["latmax"] > tmp_y)]  # This speeds up the process by over an order of magnitude!
     if len(tmp_states) > 0:
         for i, state_row in tmp_states.iterrows():
             if state_row.geometry_ll.to_shapely().contains(tmp_pt):
-                solar_df_us_sm.loc[solar_df_us_sm.iloc[j].name, "state"] = state_row["STATEFP"]
+                solar_df_us.loc[solar_df_us.iloc[j].name, "state"] = state_row["STATEFP"]
                 counter += 1
                 break
     if j+1 % 1000 == 0:
@@ -73,7 +71,5 @@ proclen = datetime.datetime.now() - starttime
 print(f"Found {counter} of {looplen} rows in the U.S.!")
 print(f"Took {proclen.total_seconds()} seconds (with pre-filtering of state_df)")
 
-solar_df_us_sm.to_csv(f"temp/nsrdb3_ghi_en_us_states_{sample_size}.csv")
-
-solar_df_us_sm = solar_df_us_sm[solar_df_us_sm["state"].notna()]  # If no need for data from outside the U.S. at all
-solar_df_us_sm.to_csv(f"data/nsrdb3_ghi_en_us_states_only.csv")
+solar_df_us = solar_df_us[solar_df_us["state"].notna()]  # If no need for data from outside the U.S. at all
+solar_df_us.to_csv(f"data/resource/nsrdb3_ghi_en_us_proc.csv")
