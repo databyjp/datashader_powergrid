@@ -3,6 +3,7 @@
 
 This app allows interactive exploration of the power grid data as well as renewable (solar and wind) power plant data throughout the United States.
 The grid data (as lines) and power plant data (as points) are aggregated through DataShader and interactively overlaid onto a Mapbox map in real-time.
+![App preview](assets/dash_power_explorer_preview.png)
 
 Dash handles the front end, while Dask handles the compute requirements at the back end. 
 
